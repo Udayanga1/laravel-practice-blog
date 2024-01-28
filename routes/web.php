@@ -1,11 +1,14 @@
 <?php
 
+use App\Services\Newsletter;
+use PhpParser\Node\Stmt\TryCatch;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\SessionsController;
+use App\Http\Controllers\NewsletterController;
+use Illuminate\Validation\ValidationException;
 use App\Http\Controllers\PostCommentsController;
-use PhpParser\Node\Stmt\TryCatch;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,30 +21,7 @@ use PhpParser\Node\Stmt\TryCatch;
 |
 */
 
-Route::post('newsletter', function () {
-  request()->validate(['email' => 'required|email']);
-
-  $mailchimp = new \MailchimpMarketing\ApiClient();
-
-  $mailchimp->setConfig([
-    'apiKey' => config('services.mailchimp.key'),
-    'server' => 'us21'
-  ]);
-
-  try {
-    
-    $response = $mailchimp->lists->addListMember("4a7691e662", [
-      "email_address" => request('email'),
-      "status" => "subscribed",]);
-  
-    } catch (\Exception $e) {
-      throw \Illuminate\Validation\ValidationException::withMessages([
-        'email' => 'This email could not be added to our newsletter list.'
-      ]);
-    }
-    
-    return redirect('/')->with('success', 'You are now signed up for our newsletter!');
-});
+Route::post('newsletter', NewsletterController::class);
 
 Route::get('/', [PostController::class, 'index'])->name('home');
 
