@@ -36,6 +36,8 @@ Route::post('sessions', [SessionsController::class, 'store'])->middleware('guest
 
 Route::post('logout', [SessionsController::class, 'destroy'])->middleware('auth');
 
+Route::get('admin/posts/create', [PostController::class, 'create'])->middleware('admin');
+
 
 // 7 restful actions
 // index, show, create, store, edit, update, destroy
