@@ -23,19 +23,10 @@ class AdminPostController extends Controller
 
     public function store()
     {
-
-        $attributes = request()->validate([
-            'title' => 'required',
-            'thumbnail' => 'required|image|max:1999', // 1999kb = 2mb
-            'slug' => ['required', Rule::unique('posts', 'slug')],
-            'excerpt' => 'required',
-            'body' => 'required',
-            'category_id' => ['required', Rule::exists('categories', 'id')]
+        $attributes = array_merge($this->validatePost(), [
+            'user_id' => request()->user()->id(),
+            'thumbnail' => request()->file('thumbnail')->store('thumbnails')
         ]);
-        
-        $attributes['user_id'] = auth()->id();
-
-        $attributes['thumbnail'] = request()->file('thumbnail')->store('thumbnails');
         
         Post::create($attributes);
 
@@ -50,14 +41,7 @@ class AdminPostController extends Controller
     public function update(Post $post)
     {
 
-        $attributes = request()->validate([
-            'title' => 'required',
-            'thumbnail' => 'image|max:1999',
-            'slug' => ['required', Rule::unique('posts', 'slug')->ignore($post->id)],
-            'excerpt' => 'required',
-            'body' => 'required',
-            'category_id' => ['required', Rule::exists('categories', 'id')]
-        ]);
+        $attributes = $this->validatePost($post);
 
         if (isset($attributes['thumbnail'])) {
             $attributes['thumbnail'] = request()->file('thumbnail')->store('thumbnails');
@@ -74,5 +58,22 @@ class AdminPostController extends Controller
         $post->delete();
 
         return back()->with('success', 'Post deleted!');
+    }
+
+    protected function validatePost(?Post $post = null): array
+    {
+        $post ??= new Post(); // If there is no post, create a new one.
+
+        $attributes = request()->validate([
+            'title' => 'required',
+            'thumbnail' => $post->exists ? ['image'] : ['required', 'image'],
+            'slug' => ['required', Rule::unique('posts', 'slug')->ignore($post)], // No post at the store stage, so we are not ignoring anything at the validation.
+            'excerpt' => 'required',
+            'body' => 'required',
+            'category_id' => ['required', Rule::exists('categories', 'id')],
+            'published_at' => 'required'
+        ]);
+
+        return $attributes;
     }
 }
